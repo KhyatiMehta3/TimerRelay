@@ -36,7 +36,7 @@ int currstate1 = 0, prevstate1 = 0, currstate2 = 0, prevstate2 = 0;
 static const char INDEX_HTML = R"rawliteral(
 <!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cymbeline Innovation Pvt. Ltd.</title>
     <script>
-    var server = '192.168.4.1';
+    var server = '192.168.1.1';
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
