@@ -32,126 +32,119 @@ int endmin2 = 0;
 uint32_t unixstart1, unixend1, unixstart2, unixend2;
 int currstate1 = 0, prevstate1 = 0, currstate2 = 0, prevstate2 = 0;
 
+//Creating the webpage String
+static const char INDEX_HTML = R"rawliteral(
+<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cymbeline Innovation Pvt. Ltd.</title>
+    <script>
+    var server = '192.168.4.1';
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+           var resp = xhttp.responseText.split(',');
+           document.getElementById('mode1').innerHTML = resp[0];
+           document.getElementById('mode2').innerHTML = resp[1];
+           if(resp[0] == 'TIMER') document.getElementsByName('m1')[0].checked = true;
+           else document.getElementsByName('m1')[1].checked = true;
+           if(resp[1] == 'TIMER') document.getElementsByName('m2')[0].checked = true;
+           else document.getElementsByName('m2')[1].checked = true;
+           if(resp[2] == '0') document.getElementsByName('r1')[0].checked = true;
+           else document.getElementsByName('r1')[1].checked = true;
+           if(resp[3] == '0') document.getElementsByName('r2')[0].checked = true;
+           else document.getElementsByName('r2')[1].checked = true;
+           document.getElementById('s1').value = pad(resp[4], 2) + ':' + pad(resp[5], 2);    
+           document.getElementById('e1').value = pad(resp[6], 2) + ':' + pad(resp[7], 2);    
+           document.getElementById('s2').value = pad(resp[8], 2) + ':' + pad(resp[9], 2);    
+           document.getElementById('e2').value = pad(resp[10], 2) + ':' + pad(resp[11], 2);    
+           document.getElementById('ns1').innerHTML = '&nbsp;&nbsp;' + pad(resp[12], 2);
+           document.getElementById('ne1').innerHTML = '&nbsp;&nbsp;' + pad(resp[13], 2);
+           document.getElementById('ns2').innerHTML = '&nbsp;&nbsp;' + pad(resp[14], 2);
+           document.getElementById('ne2').innerHTML = '&nbsp;&nbsp;' + pad(resp[15], 2);
+           document.getElementById('dtl').value = resp[18] + '-' + resp[17] + '-' + resp[16] + 'T' + resp[19] + ':' + resp[20];
+        }
+      var dt = new Date(); 
+      document.getElementById('dtl2').value = dt.getFullYear() + '-' + pad((dt.getMonth() + 1), 2) + '-' + pad(dt.getDate(), 2) + 'T' + pad(dt.getHours(), 2) + ':' + pad(dt.getMinutes(), 2);
+    document.getElementById('dtl2').disabled = true;
+    };
+    function manual(chk) {
+    	 xhttp.open('GET', 'http://'+ server +'/manual?' + chk.name + '=' + chk.value, true);
+    	 xhttp.send();
+    }
+    function setTimer(n) {
+      var url = 'http://'+ server + '/timer?n=' + n;
+      if(n == 1) {
+        url += '&sh1=' + document.getElementById('s1').value.split(':')[0];
+        url += '&sm1=' + document.getElementById('s1').value.split(':')[1];
+        url += '&eh1=' + document.getElementById('e1').value.split(':')[0];
+        url += '&em1=' + document.getElementById('e1').value.split(':')[1];
+      } else {
+        url += '&sh2=' + document.getElementById('s2').value.split(':')[0];
+        url += '&sm2=' + document.getElementById('s2').value.split(':')[1];
+        url += '&eh2=' + document.getElementById('e2').value.split(':')[0];
+        url += '&em2=' + document.getElementById('e2').value.split(':')[1];
+      }
+      xhttp.open('GET', url, true);
+    	 xhttp.send();
+    }
+    function setMode(n, m) {
+      var url = 'http://'+ server + '/mode?t=' + n + '&m=' + m.value;
+      xhttp.open('GET', url, true);
+      xhttp.send();
+    }
+    function setDateTime() { 
+      var dt = document.getElementById('dtl').value;
+      console.log(dt);
+      var d = dt.split('T')[0].split('-')[2];
+      var M = dt.split('T')[0].split('-')[1];
+      var y = dt.split('T')[0].split('-')[0];
+      var h = dt.split('T')[1].split(':')[0];
+      var m = dt.split('T')[1].split(':')[1];
+      var s = dt.split('T')[1].split(':')[2];
+      var url = 'http://'+ server +'/t?d=' + d + '&M=' + M + '&y=' + y;
+      url += '&h=' + h + '&m=' + m + '&s=' + s;
+      xhttp.open('GET', url, true);
+      xhttp.send();      
+    } 
+    function setNow() { 
+      var dt = new Date();
+      var url = 'http://'+ server +'/t?d=' + dt.getDate();
+      url += '&M=' + (dt.getMonth() + 1) + '&y=' + dt.getFullYear();
+      url += '&h=' + dt.getHours() + '&m=' + dt.getMinutes() + '&s=' + dt.getSeconds();
+      xhttp.open('GET', url, true);
+      xhttp.send();      
+    } 
+    function pad(num, size) {
+        var s = num+'';
+        while (s.length < size) s = '0' + s;
+        return s;
+    } 
+    function init() {
+      xhttp.open('GET', 'http://'+ server +'/manual', true);
+      xhttp.send();
+    } 
+    </script>
+    </head><body onLoad='init()'><h3 style='color:green'>RTC Relay Timer</h3>
+    <table>
+    <tr><td><B>Current Time</B></td><td> : <input type='datetime-local' name='dtl2' id='dtl2'></td></tr>
+    <tr><td><B>Relay Time</B></td><td> : <input type='datetime-local' name='dtl' id='dtl' onChange='setDateTime();'></td></tr>
+    <tr><td></td><td><input type='button' value='Set to Current Date and Time' onClick='setNow()'></td></tr>
+    </table><BR>
+    <HR>
+
+    <table border='0'>
+    <tr><td><B>Relay 1 </B></td><td>: <input type='radio' name='r1' value='0' checked onclick='manual(this);'> OFF  &nbsp;</td><td><input type='radio' name='r1' value='1' onclick='manual(this);'> ON </td></tr>
+    <tr><td><B>Mode </B></td><td>: <input type='radio' name='m1' value='1' checked onclick='setMode(1, this);'> TIMER  &nbsp;</td><td><input type='radio' name='m1' value='2' onclick='setMode(1, this);'> MANUAL </td></tr>
+    </table>
+    <table  border='0'>
+    <tr><td colspan='2' id='mode1' style='color:red;font-weight:bold'>TIMER</td><td><B>&nbsp;&nbsp;Next start/end</B></td></tr>
+    <tr><td><B>Start</B> </td><td>: <input type='time' name='s1' id='s1' onChange='setTimer(1)' value="18:00:00"></td><td id='ns1'>nextStart1</td></tr>
+    <tr><td><B>End</B> </td><td>: <input type='time' name='e1' id='e1' onChange='setTimer(1)' value="00:00:00"></td><td id='ne1'>nextEnd1</td></tr>
+    </table>
+    <BR>
+    </body></html>)rawliteral";
+
 //----------------------------------------------------------------------------
 void handleRoot() {
-  server.send(200, "text/html",
-    "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Timer Relay</title>"
-    "<script>"
-    "var server = '192.168.4.1';"
-    "var xhttp = new XMLHttpRequest();"
-    "xhttp.onreadystatechange = function() {"
-    "    if (this.readyState == 4 && this.status == 200) {"
-    "       var resp = xhttp.responseText.split(',');"
-    "       document.getElementById('mode1').innerHTML = resp[0];"
-    "       document.getElementById('mode2').innerHTML = resp[1];"
-    "       if(resp[0] == 'TIMER') document.getElementsByName('m1')[0].checked = true;"
-    "       else document.getElementsByName('m1')[1].checked = true;"
-    "       if(resp[1] == 'TIMER') document.getElementsByName('m2')[0].checked = true;"
-    "       else document.getElementsByName('m2')[1].checked = true;"
-    "       if(resp[2] == '0') document.getElementsByName('r1')[0].checked = true;"
-    "       else document.getElementsByName('r1')[1].checked = true;"
-    "       if(resp[3] == '0') document.getElementsByName('r2')[0].checked = true;"
-    "       else document.getElementsByName('r2')[1].checked = true;"
-    "       document.getElementById('s1').value = pad(resp[4], 2) + ':' + pad(resp[5], 2);"    
-    "       document.getElementById('e1').value = pad(resp[6], 2) + ':' + pad(resp[7], 2);"    
-    "       document.getElementById('s2').value = pad(resp[8], 2) + ':' + pad(resp[9], 2);"    
-    "       document.getElementById('e2').value = pad(resp[10], 2) + ':' + pad(resp[11], 2);"    
-    "       document.getElementById('ns1').innerHTML = '&nbsp;&nbsp;' + pad(resp[12], 2);"
-    "       document.getElementById('ne1').innerHTML = '&nbsp;&nbsp;' + pad(resp[13], 2);"
-    "       document.getElementById('ns2').innerHTML = '&nbsp;&nbsp;' + pad(resp[14], 2);"
-    "       document.getElementById('ne2').innerHTML = '&nbsp;&nbsp;' + pad(resp[15], 2);"
-    "       document.getElementById('dtl').value = resp[18] + '-' + resp[17] + '-' + resp[16] + 'T' + resp[19] + ':' + resp[20];"
-    "    }"
-    "  var dt = new Date(); "
-    "  document.getElementById('dtl2').value = dt.getFullYear() + '-' + pad((dt.getMonth() + 1), 2) + '-' + pad(dt.getDate(), 2) + 'T' + pad(dt.getHours(), 2) + ':' + pad(dt.getMinutes(), 2);"
-    "document.getElementById('dtl2').disabled = true;"
-    "};"
-    "function manual(chk) {"
-    "	 xhttp.open('GET', 'http://'+ server +'/manual?' + chk.name + '=' + chk.value, true);"
-    "	 xhttp.send();"
-    "}"
-    "function setTimer(n) {"
-      "var url = 'http://'+ server + '/timer?n=' + n;"
-      "if(n == 1) {"
-        "url += '&sh1=' + document.getElementById('s1').value.split(':')[0];"
-        "url += '&sm1=' + document.getElementById('s1').value.split(':')[1];"
-        "url += '&eh1=' + document.getElementById('e1').value.split(':')[0];"
-        "url += '&em1=' + document.getElementById('e1').value.split(':')[1];"
-      "} else {"
-        "url += '&sh2=' + document.getElementById('s2').value.split(':')[0];"
-        "url += '&sm2=' + document.getElementById('s2').value.split(':')[1];"
-        "url += '&eh2=' + document.getElementById('e2').value.split(':')[0];"
-        "url += '&em2=' + document.getElementById('e2').value.split(':')[1];"
-      "}"
-    "  xhttp.open('GET', url, true);"
-    "	 xhttp.send();"
-    "}"
-    "function setMode(n, m) {"
-    "  var url = 'http://'+ server + '/mode?t=' + n + '&m=' + m.value;"
-    "  xhttp.open('GET', url, true);"
-    "  xhttp.send();"
-    "}"
-    "function setDateTime() { "
-      "var dt = document.getElementById('dtl').value;"
-      "console.log(dt);"
-      "var d = dt.split('T')[0].split('-')[2];"
-      "var M = dt.split('T')[0].split('-')[1];"
-      "var y = dt.split('T')[0].split('-')[0];"
-      "var h = dt.split('T')[1].split(':')[0];"
-      "var m = dt.split('T')[1].split(':')[1];"
-      "var s = dt.split('T')[1].split(':')[2];"
-      "var url = 'http://'+ server +'/t?d=' + d + '&M=' + M + '&y=' + y;"
-      "url += '&h=' + h + '&m=' + m + '&s=' + s;"
-      "xhttp.open('GET', url, true);"
-      "xhttp.send();"      
-    "} "
-    "function setNow() { "
-      "var dt = new Date();"
-      "var url = 'http://'+ server +'/t?d=' + dt.getDate();"
-      "url += '&M=' + (dt.getMonth() + 1) + '&y=' + dt.getFullYear();"
-      "url += '&h=' + dt.getHours() + '&m=' + dt.getMinutes() + '&s=' + dt.getSeconds();"
-      "xhttp.open('GET', url, true);"
-      "xhttp.send();"      
-    "} "
-    "function pad(num, size) {"
-        "var s = num+'';"
-        "while (s.length < size) s = '0' + s;"
-        "return s;"
-    "} "
-    "function init() {"
-      "xhttp.open('GET', 'http://'+ server +'/manual', true);"
-      "xhttp.send();"
-    "} "
-    "</script>"
-    "</head><body onLoad='init()'><h3 style='color:green'>Timer Relay</h3>"
-    "<table>"
-    "<tr><td><B>Current Time</B></td><td> : <input type='datetime-local' name='dtl2' id='dtl2'></td></tr>"
-    "<tr><td><B>Relay Time</B></td><td> : <input type='datetime-local' name='dtl' id='dtl' onChange='setDateTime();'></td></tr>"
-    "<tr><td></td><td><input type='button' value='Set to Current Date and Time' onClick='setNow()'></td></tr>"
-    "</table><BR>"
-    "<HR>"
-
-    "<table border='0'>"
-    "<tr><td><B>Relay 1 </B></td><td>: <input type='radio' name='r1' value='0' checked onclick='manual(this);'> OFF  &nbsp;</td><td><input type='radio' name='r1' value='1' onclick='manual(this);'> ON </td></tr>"
-    "<tr><td><B>Mode </B></td><td>: <input type='radio' name='m1' value='1' checked onclick='setMode(1, this);'> TIMER  &nbsp;</td><td><input type='radio' name='m1' value='2' onclick='setMode(1, this);'> MANUAL </td></tr>"
-    "</table>"
-    "<table  border='0'>"
-    "<tr><td colspan='2' id='mode1' style='color:red;font-weight:bold'>TIMER</td><td><B>&nbsp;&nbsp;Next start/end</B></td></tr>"
-    "<tr><td><B>Start</B> </td><td>: <input type='time' name='s1' id='s1' onChange='setTimer(1)'></td><td id='ns1'>nextStart1</td></tr>"
-    "<tr><td><B>End</B> </td><td>: <input type='time' name='e1' id='e1' onChange='setTimer(1)'></td><td id='ne1'>nextEnd1</td></tr>"
-    "</table>"
-    "<BR><HR>"
-    "<table border='0'>"
-    "<tr><td><B>Relay 2 </B></td><td>: <input type='radio' name='r2' value='0' checked onclick='manual(this);'> OFF  &nbsp;</td><td><input type='radio' name='r2' value='1' onclick='manual(this);'> ON </td></tr>"
-    "<tr><td><B>Mode </B></td><td>: <input type='radio' name='m2' value='1' checked onclick='setMode(2, this);'> TIMER  &nbsp;</td><td><input type='radio' name='m2' value='2' onclick='setMode(2, this);'> MANUAL </td></tr>"
-    "</table>"
-    "<table  border='0'>"
-    "<tr><td colspan='2' id='mode2' style='color:red;font-weight:bold'>TIMER</td><td><B>&nbsp;&nbsp;Next start/end</B></td></tr>"
-    "<tr><td><B>Start</B> </td><td>: <input type='time' name='s2' id='s2' onChange='setTimer(2)'></td><td id='ns2'>nextStart2</td></tr>"
-    "<tr><td><B>End</B> </td><td>: <input type='time' name='e2' id='e2' onChange='setTimer(2)'></td><td id='ne2'>nextEnd2</td></tr>"
-    "</table>"
-    "<BR><hr>"
-    "</body></html>");
+  server.send(200, "text/html", INDEX_HTML);
 }
 //----------------------------------------------------------------------------
 void handleManualONOFF() {
