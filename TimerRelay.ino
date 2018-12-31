@@ -33,7 +33,7 @@ uint32_t unixstart1, unixend1, unixstart2, unixend2;
 int currstate1 = 0, prevstate1 = 0, currstate2 = 0, prevstate2 = 0;
 
 //Creating the webpage String
-static const char INDEX_HTML = R"rawliteral(
+static const char INDEX_HTML[] = R"rawliteral(
 <!DOCTYPE html><html><head><meta charset='UTF-8'><title>Cymbeline Innovation Pvt. Ltd.</title>
     <script>
     var server = '192.168.1.1';
